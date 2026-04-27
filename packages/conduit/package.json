@@ -1,0 +1,55 @@
+{
+  "name": "@ausernamedtom/conduit",
+  "version": "0.1.2",
+  "description": "Conduit: a TypeScript implementation of the Symphony service specification",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ausernamedtom/conduit.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ausernamedtom/conduit/issues"
+  },
+  "homepage": "https://github.com/ausernamedtom/conduit#readme",
+  "type": "module",
+  "bin": {
+    "conduit": "dist/cli/index.js"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "examples",
+    ".conduit/workflow.example.md",
+    ".env.example"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx src/cli/index.ts",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "validate": "tsx src/cli/index.ts validate --workflow .conduit/workflow.example.md",
+    "prepack": "npm run build",
+    "package:smoke": "npm pack --dry-run"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "dependencies": {
+    "dotenv": "latest",
+    "yaml": "latest",
+    "zod": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "tsx": "latest",
+    "typescript": "latest",
+    "vitest": "latest"
+  }
+}
