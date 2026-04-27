@@ -1,0 +1,151 @@
+# Contributing to Conduit
+
+Conduit is a TypeScript implementation of the Symphony service specification. Contributions should preserve that distinction:
+
+- `SPEC.md` is the upstream behavioral reference.
+- Conduit-specific choices belong in code, examples, README documentation, or ADR-style notes.
+- Do not silently change spec-derived behavior without documenting the implementation decision.
+
+## Ground rules
+
+1. Keep the tool non-intrusive for target repositories.
+   - Prefer explicit `--repo`, `--workflow`, and `--env` paths.
+   - Do not require customer/project repos to commit Conduit-specific files unless they choose to.
+   - Runtime artifacts should stay under `.conduit/` or configurable external paths.
+
+2. Keep secrets out of git.
+   - Never commit `.env` or real API keys.
+   - Use `$ENV_VAR` references in workflows.
+   - Update `.env.example` when adding required environment variables.
+
+3. Keep tracker writes opt-in.
+   - Read-only should remain the safe default.
+   - Comments and transitions must be explicitly configured.
+   - Failed tracker writes should not turn a successful agent run into a failed run unless the workflow explicitly asks for strict behavior.
+
+4. Keep integrations behind interfaces.
+   - Tracker implementations should satisfy `IssueTracker` and extend `BaseTracker`.
+   - Agent implementations should satisfy `AgentRunner`.
+   - Avoid coupling orchestration logic directly to any specific tracker or agent transport details.
+
+5. Prefer small, testable changes.
+   - Add or update tests for parser, config, prompt rendering, tracker normalization, workspace safety, and orchestration behavior.
+   - Keep commits focused.
+
+## Development setup
+
+Install dependencies:
+
+```bash
+npx pnpm@latest install
+```
+
+Run checks:
+
+```bash
+npx pnpm@latest typecheck
+npx pnpm@latest test
+npx pnpm@latest build
+```
+
+Validate the committed fake workflow:
+
+```bash
+npx pnpm@latest validate
+```
+
+## Before opening a PR
+
+Run:
+
+```bash
+npx pnpm@latest typecheck
+npx pnpm@latest test
+npx pnpm@latest build
+```
+
+Also verify that no local-only files are staged:
+
+```bash
+git status --short
+```
+
+Do not commit:
+
+- `.env`
+- `WORKFLOW.md` local test files
+- `.conduit/state/`
+- `.conduit/workspaces/`
+- `dist/`
+- `node_modules/`
+
+## Workflow and config changes
+
+When adding or changing workflow fields:
+
+1. Update the typed config model.
+2. Update parser/default behavior.
+3. Update examples under the relevant plugin package `examples/` directory.
+4. Update README if the field is user-facing.
+5. Add tests for defaults and validation.
+
+Unknown workflow keys should continue to be ignored for forward compatibility unless there is a strong reason to reject them.
+
+## Tracker plugin changes
+
+Tracker plugins live in `packages/conduit-tracker-*`. Each exports a default class extending `BaseTracker` from `@ausernamedtom/conduit`.
+
+When changing a tracker plugin:
+
+- Keep GraphQL/REST operations isolated in the client and normalize outputs to `Issue`.
+- Preserve label normalization to lowercase.
+- Preserve optional write behavior — do not add automatic state transitions unless explicitly configured.
+- Add or update the example workflow under the plugin's `examples/` directory.
+
+## Agent runner plugin changes
+
+Runner plugins live in `packages/conduit-runner-*`. Each exports a default class implementing `AgentRunner`.
+
+Runner packages follow the naming convention `conduit-runner-{vendor}-{mechanism}`, where mechanism is `api` (HTTP) or `cli` (subprocess). For example: `conduit-runner-openai-api`, `conduit-runner-claude-cli`. The `agent.kind` in workflow YAML matches the suffix after `conduit-runner-` (e.g. `kind: openai-api`). Tracker packages follow `conduit-tracker-{vendor}` — mechanism is omitted since trackers are always HTTP API.
+
+When changing a runner plugin:
+
+- Keep `AgentRunner` transport-neutral.
+- Keep fake agent support for tests and dry runs.
+- Preserve turn timeout and stall timeout behavior.
+- Add or update the example workflow under the relevant tracker plugin's `examples/` directory.
+
+## Workspace safety rules
+
+Workspace code must be conservative.
+
+Do not delete paths unless they are known to be under the configured workspace root. Avoid behavior that can remove or overwrite arbitrary user files.
+
+Branch names should use the Conduit prefix by default:
+
+```text
+conduit/<issue-key>/<attempt>
+```
+
+## Documentation style
+
+Use clear user-facing language:
+
+- Call this implementation **Conduit**.
+- Refer to Symphony as the upstream specification.
+- Keep examples copy-pasteable.
+- Mention when a feature is experimental, fake/local-only, or production-incomplete.
+
+## Commit style
+
+Commit early and often. Each commit should group logically related files — all the changes that belong to one coherent step, and nothing more. This makes a PR easy to read commit-by-commit and keeps the history meaningful during review.
+
+PRs are merged via squash commit, so the branch history does not survive into `main`. What matters is that the squash commit message clearly describes the change as a whole. Within the branch, prefer more commits over fewer.
+
+Use short imperative commit messages, for example:
+
+```text
+Improve external state directory recovery semantics
+Fix Linear team state lookup
+Document non-intrusive target repo setup
+```
