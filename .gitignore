@@ -1,0 +1,9 @@
+.env
+.env.*
+!.env.example
+.conduit/state/
+.conduit/workspaces/
+WORKFLOW.md
+coverage/
+dist/
+node_modules/
