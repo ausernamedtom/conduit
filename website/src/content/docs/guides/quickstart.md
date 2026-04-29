@@ -5,6 +5,8 @@ description: Install Conduit, configure a workflow, and run your first agent loo
 
 Conduit polls an issue tracker, dispatches a coding agent for each eligible issue inside an isolated git worktree, and optionally writes results back. This guide walks through a minimal Linear + OpenAI setup.
 
+> Prefer point-and-click? The [setup wizard](/conduit/guides/wizard/) generates the install command, workflow file, and `.env` from your tracker and runner choices.
+
 ## Install
 
 ```bash

@@ -1,0 +1,465 @@
+---
+// Interactive setup wizard. State is managed client-side; the component is a
+// static shell that the script wires up.
+---
+
+<div class="wizard" data-wizard>
+  <ol class="wizard-steps">
+    <li>
+      <h3>1. Pick a tracker</h3>
+      <div class="choices" role="radiogroup" aria-label="Tracker">
+        <label><input type="radio" name="tracker" value="github" checked /> <span>GitHub Issues</span></label>
+        <label><input type="radio" name="tracker" value="linear" /> <span>Linear</span></label>
+        <label><input type="radio" name="tracker" value="jira" /> <span>Jira</span></label>
+        <label><input type="radio" name="tracker" value="gitlab" /> <span>GitLab</span></label>
+      </div>
+      <div class="tracker-fields">
+        <div data-tracker-field="github">
+          <label>Repository <code>owner/name</code>
+            <input type="text" data-input="github.repo" placeholder="acme/widgets" value="acme/widgets" />
+          </label>
+        </div>
+        <div data-tracker-field="linear" hidden>
+          <label>Team key
+            <input type="text" data-input="linear.team_key" placeholder="ENG" value="ENG" />
+          </label>
+        </div>
+        <div data-tracker-field="jira" hidden>
+          <label>Base URL
+            <input type="text" data-input="jira.base_url" placeholder="https://your-org.atlassian.net" value="https://your-org.atlassian.net" />
+          </label>
+          <label>Project key
+            <input type="text" data-input="jira.project_key" placeholder="PROJ" value="PROJ" />
+          </label>
+        </div>
+        <div data-tracker-field="gitlab" hidden>
+          <label>Project ID
+            <input type="text" data-input="gitlab.project_id" placeholder="12345" value="12345" />
+          </label>
+        </div>
+      </div>
+    </li>
+
+    <li>
+      <h3>2. Pick a runner</h3>
+      <div class="choices" role="radiogroup" aria-label="Runner">
+        <label><input type="radio" name="runner" value="claude-cli" checked /> <span>Claude Code CLI</span></label>
+        <label><input type="radio" name="runner" value="claude-api" /> <span>Claude API key</span></label>
+        <label><input type="radio" name="runner" value="openai-api" /> <span>OpenAI-compatible</span></label>
+        <label><input type="radio" name="runner" value="codex-cli" /> <span>OpenAI Codex CLI</span></label>
+      </div>
+      <div class="runner-fields">
+        <div data-runner-field="claude-cli">
+          <label>Model
+            <input type="text" data-input="claude-cli.model" value="claude-sonnet-4-6" />
+          </label>
+        </div>
+        <div data-runner-field="claude-api" hidden>
+          <label>Model
+            <input type="text" data-input="claude-api.model" value="claude-sonnet-4-6" />
+          </label>
+        </div>
+        <div data-runner-field="openai-api" hidden>
+          <label>Model
+            <input type="text" data-input="openai-api.model" value="gpt-4o" />
+          </label>
+          <label>Base URL
+            <input type="text" data-input="openai-api.base_url" value="https://api.openai.com/v1" />
+          </label>
+        </div>
+        <div data-runner-field="codex-cli" hidden>
+          <label>Model
+            <input type="text" data-input="codex-cli.model" value="gpt-5" />
+          </label>
+        </div>
+      </div>
+    </li>
+
+    <li>
+      <h3>3. Install</h3>
+      <pre><code data-output="install"></code></pre>
+      <button type="button" data-copy="install">Copy</button>
+    </li>
+
+    <li>
+      <h3>4. <code>.conduit/workflow.md</code></h3>
+      <pre><code data-output="workflow"></code></pre>
+      <button type="button" data-copy="workflow">Copy</button>
+    </li>
+
+    <li>
+      <h3>5. <code>.env</code></h3>
+      <pre><code data-output="env"></code></pre>
+      <button type="button" data-copy="env">Copy</button>
+    </li>
+
+    <li>
+      <h3>6. Run</h3>
+      <pre><code data-output="run"></code></pre>
+      <button type="button" data-copy="run">Copy</button>
+    </li>
+  </ol>
+</div>
+
+<script>
+  type TrackerKind = "github" | "linear" | "jira" | "gitlab";
+  type RunnerKind = "claude-cli" | "claude-api" | "openai-api" | "codex-cli";
+
+  const root = document.querySelector<HTMLElement>("[data-wizard]");
+  if (root) {
+    const state: {
+      tracker: TrackerKind;
+      runner: RunnerKind;
+      inputs: Record<string, string>;
+    } = {
+      tracker: "github",
+      runner: "claude-cli",
+      inputs: {},
+    };
+
+    root.querySelectorAll<HTMLInputElement>("[data-input]").forEach((el) => {
+      state.inputs[el.dataset.input!] = el.value;
+      el.addEventListener("input", () => {
+        state.inputs[el.dataset.input!] = el.value;
+        render();
+      });
+    });
+
+    root
+      .querySelectorAll<HTMLInputElement>('input[name="tracker"]')
+      .forEach((el) => {
+        el.addEventListener("change", () => {
+          if (el.checked) {
+            state.tracker = el.value as TrackerKind;
+            toggleFields();
+            render();
+          }
+        });
+      });
+
+    root
+      .querySelectorAll<HTMLInputElement>('input[name="runner"]')
+      .forEach((el) => {
+        el.addEventListener("change", () => {
+          if (el.checked) {
+            state.runner = el.value as RunnerKind;
+            toggleFields();
+            render();
+          }
+        });
+      });
+
+    root.querySelectorAll<HTMLButtonElement>("[data-copy]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const key = btn.dataset.copy!;
+        const code = root.querySelector<HTMLElement>(
+          `[data-output="${key}"]`,
+        );
+        if (!code) return;
+        try {
+          await navigator.clipboard.writeText(code.textContent ?? "");
+          const original = btn.textContent;
+          btn.textContent = "Copied";
+          setTimeout(() => {
+            btn.textContent = original;
+          }, 1200);
+        } catch {
+          // clipboard blocked — ignore
+        }
+      });
+    });
+
+    function toggleFields() {
+      root!
+        .querySelectorAll<HTMLElement>("[data-tracker-field]")
+        .forEach((el) => {
+          el.hidden = el.dataset.trackerField !== state.tracker;
+        });
+      root!
+        .querySelectorAll<HTMLElement>("[data-runner-field]")
+        .forEach((el) => {
+          el.hidden = el.dataset.runnerField !== state.runner;
+        });
+    }
+
+    function trackerPackage(t: TrackerKind) {
+      return `@ausernamedtom/conduit-tracker-${t}`;
+    }
+
+    function runnerPackage(r: RunnerKind) {
+      // claude-api maps onto the openai-api runner against Anthropic's
+      // OpenAI-compatible endpoint, so the package is the same.
+      if (r === "claude-api") return "@ausernamedtom/conduit-runner-openai-api";
+      return `@ausernamedtom/conduit-runner-${r}`;
+    }
+
+    function buildInstall(): string {
+      const pkgs = [
+        "@ausernamedtom/conduit",
+        trackerPackage(state.tracker),
+        runnerPackage(state.runner),
+      ];
+      return `npm install -g \\\n  ${pkgs.join(" \\\n  ")}`;
+    }
+
+    function trackerYaml(): string {
+      const t = state.tracker;
+      if (t === "github") {
+        return [
+          "tracker:",
+          "  kind: github",
+          "  api_key: $GITHUB_TOKEN",
+          `  repo: ${state.inputs["github.repo"] || "owner/name"}`,
+          "  active_states: [open]",
+          "  required_labels: [agentic]",
+          "  excluded_labels: [blocked]",
+          "  writes:",
+          "    enabled: false",
+        ].join("\n");
+      }
+      if (t === "linear") {
+        return [
+          "tracker:",
+          "  kind: linear",
+          "  api_key: $LINEAR_API_KEY",
+          `  team_key: ${state.inputs["linear.team_key"] || "ENG"}`,
+          "  active_states: [Todo, Ready]",
+          "  required_labels: [agentic]",
+          "  excluded_labels: [blocked]",
+          "  writes:",
+          "    enabled: false",
+        ].join("\n");
+      }
+      if (t === "jira") {
+        return [
+          "tracker:",
+          "  kind: jira",
+          "  api_key: $JIRA_API_TOKEN",
+          "  email: $JIRA_EMAIL",
+          `  base_url: ${state.inputs["jira.base_url"] || "https://your-org.atlassian.net"}`,
+          `  project_key: ${state.inputs["jira.project_key"] || "PROJ"}`,
+          "  active_states: [To Do, In Progress]",
+          "  required_labels: [agentic]",
+          "  excluded_labels: [blocked]",
+          "  writes:",
+          "    enabled: false",
+        ].join("\n");
+      }
+      // gitlab
+      return [
+        "tracker:",
+        "  kind: gitlab",
+        "  api_key: $GITLAB_TOKEN",
+        `  project_id: ${state.inputs["gitlab.project_id"] || "12345"}`,
+        "  active_states: [opened]",
+        "  required_labels: [agentic]",
+        "  excluded_labels: [blocked]",
+        "  writes:",
+        "    enabled: false",
+      ].join("\n");
+    }
+
+    function runnerYaml(): string {
+      const r = state.runner;
+      if (r === "claude-cli") {
+        return [
+          "agent:",
+          "  kind: claude-cli",
+          "  max_concurrent_agents: 1",
+          "claude-cli:",
+          `  model: ${state.inputs["claude-cli.model"] || "claude-sonnet-4-6"}`,
+        ].join("\n");
+      }
+      if (r === "claude-api") {
+        return [
+          "agent:",
+          "  kind: openai-api",
+          "  max_concurrent_agents: 1",
+          "openai-api:",
+          `  model: ${state.inputs["claude-api.model"] || "claude-sonnet-4-6"}`,
+          "  base_url: https://api.anthropic.com/v1",
+        ].join("\n");
+      }
+      if (r === "openai-api") {
+        return [
+          "agent:",
+          "  kind: openai-api",
+          "  max_concurrent_agents: 1",
+          "openai-api:",
+          `  model: ${state.inputs["openai-api.model"] || "gpt-4o"}`,
+          `  base_url: ${state.inputs["openai-api.base_url"] || "https://api.openai.com/v1"}`,
+        ].join("\n");
+      }
+      // codex-cli
+      return [
+        "agent:",
+        "  kind: codex-cli",
+        "  max_concurrent_agents: 1",
+        "codex-cli:",
+        `  model: ${state.inputs["codex-cli.model"] || "gpt-5"}`,
+      ].join("\n");
+    }
+
+    function trackerNoun(t: TrackerKind) {
+      return {
+        github: "GitHub",
+        linear: "Linear",
+        jira: "Jira",
+        gitlab: "GitLab",
+      }[t];
+    }
+
+    function buildWorkflow(): string {
+      const noun = trackerNoun(state.tracker);
+      return [
+        "---",
+        trackerYaml(),
+        "workspace:",
+        "  root: .conduit/workspaces",
+        "  strategy: git-worktree",
+        "  base_ref: main",
+        runnerYaml(),
+        "---",
+        `Implement the ${noun} issue below in this repository.`,
+        "",
+        "Issue: {{issue.identifier}} - {{issue.title}}",
+        "URL: {{issue.url}}",
+        "State: {{issue.state.name}}",
+        "Labels: {{issue.labels}}",
+        "Workspace: {{workspace.path}}",
+        "Attempt: {{attempt.number}}",
+        "",
+        "Description:",
+        "{{issue.description}}",
+        "",
+        "Please make the smallest safe change, run relevant tests, and summarize the result.",
+      ].join("\n");
+    }
+
+    function buildEnv(): string {
+      const lines: string[] = [];
+      if (state.tracker === "github") lines.push("GITHUB_TOKEN=ghp_...");
+      if (state.tracker === "linear") lines.push("LINEAR_API_KEY=lin_api_...");
+      if (state.tracker === "jira") {
+        lines.push("JIRA_EMAIL=you@example.com");
+        lines.push("JIRA_API_TOKEN=...");
+      }
+      if (state.tracker === "gitlab") lines.push("GITLAB_TOKEN=glpat-...");
+
+      if (state.runner === "claude-api")
+        lines.push("OPENAI_API_KEY=sk-ant-...");
+      else if (state.runner === "openai-api")
+        lines.push("OPENAI_API_KEY=sk-...");
+      // claude-cli and codex-cli authenticate via their own CLI tools.
+      return lines.join("\n");
+    }
+
+    function buildRun(): string {
+      return [
+        "conduit validate --workflow .conduit/workflow.md",
+        "conduit once     --workflow .conduit/workflow.md",
+        "conduit start    --workflow .conduit/workflow.md",
+      ].join("\n");
+    }
+
+    function render() {
+      const slots: Record<string, string> = {
+        install: buildInstall(),
+        workflow: buildWorkflow(),
+        env: buildEnv(),
+        run: buildRun(),
+      };
+      for (const [key, value] of Object.entries(slots)) {
+        const el = root!.querySelector<HTMLElement>(`[data-output="${key}"]`);
+        if (el) el.textContent = value;
+      }
+    }
+
+    toggleFields();
+    render();
+  }
+</script>
+
+<style>
+  .wizard {
+    margin-block: 1rem;
+  }
+  .wizard-steps {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 1.5rem;
+  }
+  .wizard-steps > li {
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 0.5rem;
+    padding: 1rem 1.25rem;
+    background: var(--sl-color-bg-sidebar);
+  }
+  .wizard h3 {
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+    font-size: 1.05rem;
+  }
+  .choices {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+  .choices label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.75rem;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 999px;
+    cursor: pointer;
+    background: var(--sl-color-bg);
+    font-size: 0.9rem;
+  }
+  .choices label:has(input:checked) {
+    border-color: var(--sl-color-accent);
+    background: var(--sl-color-accent-low);
+    color: var(--sl-color-accent-high);
+  }
+  .tracker-fields,
+  .runner-fields {
+    display: grid;
+    gap: 0.5rem;
+  }
+  .tracker-fields label,
+  .runner-fields label {
+    display: grid;
+    gap: 0.25rem;
+    font-size: 0.85rem;
+    color: var(--sl-color-gray-2);
+  }
+  .tracker-fields input[type="text"],
+  .runner-fields input[type="text"] {
+    width: 100%;
+    padding: 0.45rem 0.6rem;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 0.35rem;
+    background: var(--sl-color-bg);
+    color: var(--sl-color-white);
+    font-family: var(--sl-font-mono);
+    font-size: 0.85rem;
+  }
+  .wizard pre {
+    margin: 0.5rem 0;
+  }
+  .wizard button[data-copy] {
+    padding: 0.35rem 0.75rem;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 0.35rem;
+    background: var(--sl-color-bg);
+    color: var(--sl-color-white);
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  .wizard button[data-copy]:hover {
+    border-color: var(--sl-color-accent);
+  }
+</style>
