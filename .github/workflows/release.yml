@@ -79,7 +79,7 @@ jobs:
             echo "Already published, skipping"; exit 0
           fi
           cd packages/conduit
-          output=$(npm publish --access public 2>&1); code=$?; echo "$output"
+          output=$(npm publish --access public 2>&1) && code=0 || code=$?; echo "$output"
           if [ $code -ne 0 ] && echo "$output" | grep -qE "E409|already exists|previously published"; then
             echo "Already published, skipping"; exit 0
           fi
@@ -95,7 +95,7 @@ jobs:
             echo "Already published, skipping"; exit 0
           fi
           cd packages/conduit-tracker-github
-          output=$(npm publish --access public 2>&1); code=$?; echo "$output"
+          output=$(npm publish --access public 2>&1) && code=0 || code=$?; echo "$output"
           if [ $code -ne 0 ] && echo "$output" | grep -qE "E409|already exists|previously published"; then
             echo "Already published, skipping"; exit 0
           fi
@@ -111,7 +111,7 @@ jobs:
             echo "Already published, skipping"; exit 0
           fi
           cd packages/conduit-tracker-linear
-          output=$(npm publish --access public 2>&1); code=$?; echo "$output"
+          output=$(npm publish --access public 2>&1) && code=0 || code=$?; echo "$output"
           if [ $code -ne 0 ] && echo "$output" | grep -qE "E409|already exists|previously published"; then
             echo "Already published, skipping"; exit 0
           fi
@@ -127,7 +127,7 @@ jobs:
             echo "Already published, skipping"; exit 0
           fi
           cd packages/conduit-tracker-gitlab
-          output=$(npm publish --access public 2>&1); code=$?; echo "$output"
+          output=$(npm publish --access public 2>&1) && code=0 || code=$?; echo "$output"
           if [ $code -ne 0 ] && echo "$output" | grep -qE "E409|already exists|previously published"; then
             echo "Already published, skipping"; exit 0
           fi
@@ -143,7 +143,7 @@ jobs:
             echo "Already published, skipping"; exit 0
           fi
           cd packages/conduit-tracker-jira
-          output=$(npm publish --access public 2>&1); code=$?; echo "$output"
+          output=$(npm publish --access public 2>&1) && code=0 || code=$?; echo "$output"
           if [ $code -ne 0 ] && echo "$output" | grep -qE "E409|already exists|previously published"; then
             echo "Already published, skipping"; exit 0
           fi
@@ -159,7 +159,7 @@ jobs:
             echo "Already published, skipping"; exit 0
           fi
           cd packages/conduit-runner-claude-cli
-          output=$(npm publish --access public 2>&1); code=$?; echo "$output"
+          output=$(npm publish --access public 2>&1) && code=0 || code=$?; echo "$output"
           if [ $code -ne 0 ] && echo "$output" | grep -qE "E409|already exists|previously published"; then
             echo "Already published, skipping"; exit 0
           fi
@@ -175,7 +175,7 @@ jobs:
             echo "Already published, skipping"; exit 0
           fi
           cd packages/conduit-runner-codex-cli
-          output=$(npm publish --access public 2>&1); code=$?; echo "$output"
+          output=$(npm publish --access public 2>&1) && code=0 || code=$?; echo "$output"
           if [ $code -ne 0 ] && echo "$output" | grep -qE "E409|already exists|previously published"; then
             echo "Already published, skipping"; exit 0
           fi
@@ -191,7 +191,7 @@ jobs:
             echo "Already published, skipping"; exit 0
           fi
           cd packages/conduit-runner-openai-api
-          output=$(npm publish --access public 2>&1); code=$?; echo "$output"
+          output=$(npm publish --access public 2>&1) && code=0 || code=$?; echo "$output"
           if [ $code -ne 0 ] && echo "$output" | grep -qE "E409|already exists|previously published"; then
             echo "Already published, skipping"; exit 0
           fi
