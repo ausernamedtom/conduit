@@ -48,7 +48,7 @@ Implement the Linear issue below in this repository.
 
 Issue: {{issue.identifier}} - {{issue.title}}
 URL: {{issue.url}}
-State: {{issue.state.name}}
+State: {{issue.state}}
 Labels: {{issue.labels}}
 Workspace: {{workspace.path}}
 Attempt: {{attempt.number}}

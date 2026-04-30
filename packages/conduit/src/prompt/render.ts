@@ -12,7 +12,7 @@ export function renderPrompt(template: string, input: { issue: Issue; workspace:
 
 function lookup(key: string, i: { issue: Issue; workspace: Workspace; attempt: RunAttempt; config: ServiceConfig; previousError?: string }): unknown {
   const map: Record<string, unknown> = {
-    "issue.id": i.issue.id, "issue.identifier": i.issue.identifier, "issue.title": i.issue.title, "issue.description": i.issue.description, "issue.url": i.issue.url, "issue.state.name": i.issue.state, "issue.labels": i.issue.labels,
+    "issue.id": i.issue.id, "issue.identifier": i.issue.identifier, "issue.title": i.issue.title, "issue.description": i.issue.description, "issue.url": i.issue.url, "issue.state": i.issue.state, "issue.labels": i.issue.labels,
     "workspace.path": i.workspace.path, "attempt.id": i.attempt.id, "attempt.number": i.attempt.attempt, "retry.previous_error": i.previousError ?? "", "service.repo_path": i.config.repoPath
   };
   return map[key];
