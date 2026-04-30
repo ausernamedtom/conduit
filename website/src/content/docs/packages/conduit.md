@@ -30,4 +30,4 @@ To build a custom tracker or runner, implement the interface from this package a
 
 ## Source
 
-[`packages/conduit`](https://github.com/ausernamedtom/conduit/tree/main/packages/conduit) on GitHub.
+[`packages/conduit`](https://github.com/conduit-harness/conduit/tree/main/packages/conduit) on GitHub.
