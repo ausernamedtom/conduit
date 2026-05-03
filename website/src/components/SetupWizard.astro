@@ -112,7 +112,7 @@
             <select data-input="hardware.gpu_series" data-gpu-series></select>
           </label>
           <label>RAM (GB): <output data-ram-display>16</output>
-            <input type="range" min="1" max="96" step="1" value="16" data-input="hardware.ram_gb" data-ram-input />
+            <input type="range" min="0" max="11" step="1" value="5" data-ram-input />
           </label>
         </div>
 
@@ -275,12 +275,21 @@
       });
     });
 
+    const RAM_STEPS = [4, 6, 8, 10, 12, 16, 20, 24, 32, 48, 72, 96];
     const ramInput = root.querySelector<HTMLInputElement>("[data-ram-input]");
     const ramDisplay = root.querySelector<HTMLElement>("[data-ram-display]");
-    if (ramInput && ramDisplay) {
-      ramDisplay.textContent = ramInput.value;
+    function syncRam() {
+      if (!ramInput) return;
+      const idx = Number.parseInt(ramInput.value, 10);
+      const gb = RAM_STEPS[Number.isFinite(idx) ? idx : 5] ?? 16;
+      state.inputs["hardware.ram_gb"] = String(gb);
+      if (ramDisplay) ramDisplay.textContent = String(gb);
+    }
+    if (ramInput) {
+      syncRam();
       ramInput.addEventListener("input", () => {
-        ramDisplay.textContent = ramInput.value;
+        syncRam();
+        render();
       });
     }
 
