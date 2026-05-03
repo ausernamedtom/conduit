@@ -56,6 +56,8 @@ aider:
 
 The runner writes the prompt to a temp file in the worktree and passes it via `--message-file`, so each issue dispatch is a single non-interactive aider session.
 
+On startup the runner verifies that the configured `aider` binary is on `PATH`; if it isn't, Conduit fails fast with the install command rather than silently dispatching agents that would all error out.
+
 ## Configuration options
 
 All under the `aider:` key in the workflow:

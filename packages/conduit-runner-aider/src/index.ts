@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { writeFile, unlink } from "node:fs/promises";
 import { join } from "node:path";
 import type { AgentResult, AgentRunner, RunAttempt, ServiceConfig } from "@conduit-harness/conduit";
@@ -27,6 +27,23 @@ export default class AiderRunner implements AgentRunner {
     this.extraArgs = str(raw.extra_args, "");
     this.turnTimeoutMs = num(raw.turn_timeout_ms, 3600000);
     this.stallTimeoutMs = num(raw.stall_timeout_ms, 300000);
+    this.preflight();
+  }
+
+  private preflight(): void {
+    const bin = this.command.trim().split(/\s+/)[0];
+    if (!bin) return;
+    const result = spawnSync(bin, ["--version"], { stdio: "ignore" });
+    const notFound = result.error !== undefined && (result.error as NodeJS.ErrnoException).code === "ENOENT";
+    if (notFound) {
+      throw new Error(
+        `aider runner: '${bin}' was not found on PATH.\n\n` +
+        `Install aider:\n` +
+        `  macOS / Linux:  curl -LsSf https://aider.chat/install.sh | sh\n` +
+        `  Windows:        powershell -ExecutionPolicy ByPass -c "irm https://aider.chat/install.ps1 | iex"\n` +
+        `\nOther install methods: https://aider.chat/docs/install.html`,
+      );
+    }
   }
 
   async run(attempt: RunAttempt, prompt: string): Promise<AgentResult> {
