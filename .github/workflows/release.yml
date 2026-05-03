@@ -199,6 +199,8 @@ jobs:
 
       - name: Verify all packages published
         run: |
+          # npm's registry is briefly inconsistent right after publish, so each
+          # package gets up to ~60s of polling before we declare it missing.
           failed=0
           for pkg in \
             @conduit-harness/conduit \
@@ -209,10 +211,20 @@ jobs:
             @conduit-harness/conduit-runner-claude-cli \
             @conduit-harness/conduit-runner-codex-cli \
             @conduit-harness/conduit-runner-openai-api; do
-            if ( npm view "${pkg}@${VERSION}" version 2>/dev/null || true ) | grep -qF "${VERSION}"; then
-              echo "✓ ${pkg}@${VERSION}"
-            else
-              echo "✗ ${pkg}@${VERSION} — NOT found on npm"
+            ok=0
+            for attempt in 1 2 3 4 5 6; do
+              if ( npm view "${pkg}@${VERSION}" version 2>/dev/null || true ) | grep -qF "${VERSION}"; then
+                echo "✓ ${pkg}@${VERSION}"
+                ok=1
+                break
+              fi
+              if [ "$attempt" -lt 6 ]; then
+                echo "… ${pkg}@${VERSION} not visible yet, retrying in 10s (attempt ${attempt}/6)"
+                sleep 10
+              fi
+            done
+            if [ "$ok" -eq 0 ]; then
+              echo "✗ ${pkg}@${VERSION} — NOT found on npm after 60s"
               failed=1
             fi
           done
